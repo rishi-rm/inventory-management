@@ -9,13 +9,18 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: '*' }));
+
+app.get('/', (req, res) => {
+  res.send('Backend running');
+});
 
 app.get('/health', (req, res) => {
   res.json({ success: true, message: 'API is healthy' });
 });
 
 app.use('/api/access', accessRoutes);
+app.use('/api/raw-materials', rawMaterialRoutes);
 app.use('/api/materials', rawMaterialRoutes);
 app.use('/api/products', productRoutes);
 
