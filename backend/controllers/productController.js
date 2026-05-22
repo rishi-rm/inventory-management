@@ -3,7 +3,8 @@ const RawMaterial = require('../models/RawMaterial');
 
 exports.getAllProducts = async (req, res, next) => {
   try {
-    const products = await Product.find({}).populate('materials.material', 'name unit');
+    // include ratePerKg on populated raw materials so product calculations on frontend can use it
+    const products = await Product.find({}).populate('materials.material', 'itemName unit ratePerKg');
     res.json({ success: true, data: products });
   } catch (err) {
     next(err);
@@ -26,7 +27,7 @@ exports.createProduct = async (req, res, next) => {
         return next(error);
       }
       if (item.quantity > mat.quantity) {
-        const error = new Error(`Insufficient stock for ${mat.name}`);
+        const error = new Error(`Insufficient stock for ${mat.itemName || mat.name}`);
         error.statusCode = 400;
         return next(error);
       }

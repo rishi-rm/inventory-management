@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { Plus, Pencil, Trash2, Package, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import PageHeader from '../components/PageHeader.jsx';
 import SearchInput from '../components/SearchInput.jsx';
@@ -109,9 +109,14 @@ export default function Products() {
             </div>
           )}
 
-          <div className="card p-4 mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
-            <SearchInput value={q} onChange={setQ} placeholder="Search products..." />
-            <p className="text-sm text-slate-500 sm:ml-auto">{filtered.length} of {products.length} products</p>
+          <div className="card p-4 mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+              <SearchInput value={q} onChange={setQ} placeholder="Search products..." />
+              <button type="button" className="btn-secondary py-2 px-3 text-sm" disabled title="Filter options coming soon">
+                Filters
+              </button>
+            </div>
+            <p className="text-sm text-slate-500">{filtered.length} of {products.length} products</p>
           </div>
 
           {filtered.length === 0 ? (
@@ -132,75 +137,99 @@ export default function Products() {
               )}
             />
           ) : (
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filtered.map((p) => {
-                const total = productCost(p);
-                const isOpen = expanded === p.id;
-                return (
-                  <div key={p.id} className="card p-5 hover:shadow-soft transition-all hover:-translate-y-0.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 grid place-items-center shrink-0">
-                          <Package className="w-5 h-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-semibold truncate">{p.name}</p>
-                          <p className="text-xs text-slate-500">{p.quantity} units · {fmtDate(p.createdAt)}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
-                        <button className="p-2 rounded-lg hover:bg-slate-100 text-slate-600" onClick={() => { setEditing(p); setModalOpen(true); }}>
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 rounded-lg hover:bg-red-50 text-red-600" onClick={() => setDeleting(p)}>
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-2 gap-3">
-                      <div className="rounded-xl bg-slate-50 p-3">
-                        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Total cost</p>
-                        <p className="text-base font-bold mt-0.5">{fmt(total)}</p>
-                      </div>
-                      <div className="rounded-xl bg-slate-50 p-3">
-                        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Per unit</p>
-                        <p className="text-base font-bold mt-0.5">{p.quantity > 0 ? fmt(total / p.quantity) : '—'}</p>
-                      </div>
-                    </div>
-
-                    <button
-                      className="mt-4 w-full flex items-center justify-between text-sm font-medium text-slate-700 hover:text-slate-900"
-                      onClick={() => setExpanded(isOpen ? null : p.id)}
-                    >
-                      <span>{p.materials.length} raw materials used</span>
-                      {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
-
-                    {isOpen && (
-                      <div className="mt-3 border-t border-slate-100 pt-3 space-y-2 animate-fade-in">
-                        {p.materials.map((u, i) => {
-                          const m = getMaterial(u.materialId);
-                          const cpu = m ? costPerUnit(m) : 0;
-                          return (
-                            <div key={i} className="flex items-center justify-between text-sm">
-                              <div>
-                                <p className="font-medium">{m?.name || 'Unknown'}</p>
-                                <p className="text-xs text-slate-500">{u.quantity} {m?.unit} × {fmt(cpu)}</p>
+            <div className="card overflow-hidden border border-slate-200">
+              <div className="overflow-x-auto scroll-smooth">
+                <table className="min-w-[980px] w-full text-sm">
+                  <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-[0.18em]">
+                    <tr className="border-b border-slate-200">
+                      <th className="sticky top-0 z-20 text-left px-4 py-3 font-semibold">Product</th>
+                      <th className="sticky top-0 z-20 text-right px-4 py-3 font-semibold">Quantity</th>
+                      <th className="sticky top-0 z-20 text-right px-4 py-3 font-semibold">Materials Used</th>
+                      <th className="sticky top-0 z-20 text-right px-4 py-3 font-semibold">Manufacturing Cost</th>
+                      <th className="sticky top-0 z-20 text-left px-4 py-3 font-semibold">Date</th>
+                      <th className="sticky top-0 z-20 px-4 py-3 font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((p, idx) => {
+                      const total = productCost(p);
+                      const isOpen = expanded === p.id;
+                      return (
+                        <Fragment key={p.id}>
+                          <tr className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-slate-100 transition-colors`}>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 grid place-items-center shrink-0">
+                                  <Package className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-semibold truncate">{p.name}</p>
+                                  <p className="text-xs text-slate-500">{p.quantity} units</p>
+                                </div>
                               </div>
-                              <p className="font-semibold tabular-nums">{fmt(cpu * u.quantity)}</p>
-                            </div>
-                          );
-                        })}
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-sm font-bold">
-                          <span>Total</span>
-                          <span>{fmt(total)}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                            </td>
+                            <td className="px-4 py-3 text-right tabular-nums font-semibold">{p.quantity}</td>
+                            <td className="px-4 py-3 text-right tabular-nums">{p.materials.length}</td>
+                            <td className="px-4 py-3 text-right tabular-nums font-semibold">{fmt(total)}</td>
+                            <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{fmtDate(p.createdAt)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">
+                              <button
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
+                                onClick={() => setExpanded(isOpen ? null : p.id)}
+                                title="Toggle materials"
+                              >
+                                {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                              </button>
+                              <button
+                                className="ml-2 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
+                                onClick={() => { setEditing(p); setModalOpen(true); }}
+                                title="Edit product"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                className="ml-2 inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 hover:bg-red-100"
+                                onClick={() => setDeleting(p)}
+                                title="Delete product"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                          {isOpen && (
+                            <tr>
+                              <td colSpan="6" className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                                <div className="rounded-2xl bg-white border border-slate-200 p-4">
+                                  <div className="mb-3 text-xs uppercase tracking-[0.18em] text-slate-500 font-semibold">Materials breakdown</div>
+                                  <div className="grid gap-3">
+                                    {p.materials.map((u, i) => {
+                                      const m = getMaterial(u.materialId);
+                                      const cpu = m ? costPerUnit(m) : 0;
+                                      return (
+                                        <div key={i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl bg-slate-50 p-3">
+                                          <div className="min-w-0">
+                                            <p className="font-medium truncate">{m?.itemName || m?.name || 'Unknown'}</p>
+                                            <p className="text-xs text-slate-500">{u.quantity} {m?.unit} × {fmt(cpu)}</p>
+                                          </div>
+                                          <p className="font-semibold tabular-nums">{fmt(cpu * u.quantity)}</p>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                  <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-3 text-sm font-semibold">
+                                    <span>Total cost</span>
+                                    <span>{fmt(total)}</span>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </>

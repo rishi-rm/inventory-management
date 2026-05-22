@@ -12,7 +12,7 @@ import {
 
 const InventoryContext = createContext(null);
 
-const DEFAULT_UNITS = ['kg', 'container', 'liters', 'packets', 'pieces', 'boxes'];
+const DEFAULT_UNITS = ['kg', 'g', 'mg', 'container', 'liters', 'packets', 'pieces', 'boxes'];
 
 export function InventoryProvider({ children }) {
   const [materials, setMaterials] = useState([]);
@@ -96,7 +96,7 @@ export function InventoryProvider({ children }) {
   };
 
   const getMaterial = (id) => materials.find((m) => m.id === id);
-  const costPerUnit = (mat) => (mat && mat.quantity > 0 ? mat.totalCost / mat.quantity : 0);
+  const costPerUnit = (mat) => (mat && typeof mat.ratePerKg !== 'undefined' ? mat.ratePerKg : 0);
   const productCost = (product) =>
     product.materials.reduce((sum, u) => {
       const m = getMaterial(u.materialId);
@@ -107,7 +107,7 @@ export function InventoryProvider({ children }) {
     () => ({
       totalMaterials: materials.length,
       totalProducts: products.length,
-      totalInventoryValue: materials.reduce((s, m) => s + (Number(m.totalCost) || 0), 0),
+      totalInventoryValue: materials.reduce((s, m) => s + (Number(m.ratePerKg || 0) * Number(m.quantity || 0)), 0),
       lowStockCount: materials.filter((m) => m.quantity > 0 && m.quantity < 5).length,
       outOfStockCount: materials.filter((m) => m.quantity <= 0).length,
     }),

@@ -32,7 +32,10 @@ export default function RawMaterials() {
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return materials;
-    return materials.filter((m) => m.name.toLowerCase().includes(s) || m.unit.toLowerCase().includes(s));
+    return materials.filter((m) => {
+      const name = (m.itemName || m.name || '').toLowerCase();
+      return name.includes(s) || (m.unit || '').toLowerCase().includes(s);
+    });
   }, [materials, q]);
 
   const onSubmit = async (data) => {
@@ -93,16 +96,21 @@ export default function RawMaterials() {
         <>
           {errorMaterials && (
             <div className="card p-4 mb-4 border border-red-100 bg-red-50 text-red-700">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <p>Unable to refresh raw materials. Please try again.</p>
                 <button className="btn-secondary" onClick={fetchMaterials}>Retry</button>
               </div>
             </div>
           )}
 
-          <div className="card p-4 mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
-            <SearchInput value={q} onChange={setQ} placeholder="Search materials..." />
-            <p className="text-sm text-slate-500 sm:ml-auto">{filtered.length} of {materials.length} items</p>
+          <div className="card p-4 mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+              <SearchInput value={q} onChange={setQ} placeholder="Search materials..." />
+              <button type="button" className="btn-secondary py-2 px-3 text-sm" disabled title="Filter options coming soon">
+                Filters
+              </button>
+            </div>
+            <p className="text-sm text-slate-500">{filtered.length} of {materials.length} materials</p>
           </div>
 
           {filtered.length === 0 ? (
@@ -117,85 +125,63 @@ export default function RawMaterials() {
               )}
             />
           ) : (
-            <>
-              <div className="hidden md:block card overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
-                    <tr>
-                      <th className="text-left font-semibold px-5 py-3">Material</th>
-                      <th className="text-right font-semibold px-5 py-3">Quantity</th>
-                      <th className="text-right font-semibold px-5 py-3">Total cost</th>
-                      <th className="text-right font-semibold px-5 py-3">Cost / unit</th>
-                      <th className="text-left font-semibold px-5 py-3">Updated</th>
-                      <th className="px-5 py-3"></th>
+            <div className="card overflow-hidden border border-slate-200">
+              <div className="overflow-x-auto scroll-smooth">
+                <table className="min-w-[980px] w-full text-sm">
+                  <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-[0.18em]">
+                    <tr className="border-b border-slate-200">
+                      <th className="sticky top-0 z-20 text-left font-semibold px-4 py-3">Item</th>
+                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Quantity</th>
+                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Base Rate</th>
+                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Rate After Tax</th>
+                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Frate</th>
+                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Rate/ kg</th>
+                      <th className="sticky top-0 z-20 text-left font-semibold px-4 py-3">Updated</th>
+                      <th className="sticky top-0 z-20 px-4 py-3"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filtered.map((m) => (
-                      <tr key={m.id} className="hover:bg-slate-50/60 transition-colors">
-                        <td className="px-5 py-4">
+                  <tbody>
+                    {filtered.map((m, idx) => (
+                      <tr key={m.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-slate-100 transition-colors`}> 
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 grid place-items-center">
                               <Boxes className="w-4 h-4" />
                             </div>
                             <div>
-                              <p className="font-semibold text-slate-900">{m.name}</p>
-                              <StockBadge qty={m.quantity} />
+                              <p className="font-semibold text-slate-900">{m.itemName || m.name}</p>
+                              <span className="text-xs text-slate-500">{m.unit}</span>
                             </div>
                           </div>
                         </td>
-                        <td className="px-5 py-4 text-right tabular-nums">{m.quantity} <span className="text-slate-500">{m.unit}</span></td>
-                        <td className="px-5 py-4 text-right tabular-nums">{fmtMoney(m.totalCost)}</td>
-                        <td className="px-5 py-4 text-right tabular-nums font-semibold">{fmtMoney(costPerUnit(m))}</td>
-                        <td className="px-5 py-4 text-slate-500">{fmtDate(m.updatedAt)}</td>
-                        <td className="px-5 py-4">
-                          <div className="flex justify-end gap-1">
-                            <button className="p-2 rounded-lg hover:bg-slate-100 text-slate-600" onClick={() => { setEditing(m); setModalOpen(true); }}>
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button className="p-2 rounded-lg hover:bg-red-50 text-red-600" onClick={() => setDeleting(m)}>
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                        <td className="px-4 py-3 text-right tabular-nums font-semibold">{m.quantity}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(m.baseRate)}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(m.rateAfterTax)}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(m.frate)}</td>
+                        <td className="px-4 py-3 text-right tabular-nums font-semibold">{fmtMoney(m.ratePerKg)}</td>
+                        <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{fmtDate(m.updatedAt)}</td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <button
+                            className="inline-flex items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100"
+                            onClick={() => { setEditing(m); setModalOpen(true); }}
+                            title="Edit material"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            className="ml-2 inline-flex items-center justify-center rounded-lg p-2 text-red-600 hover:bg-red-100"
+                            onClick={() => setDeleting(m)}
+                            title="Delete material"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-
-              <div className="md:hidden space-y-3">
-                {filtered.map((m) => (
-                  <div key={m.id} className="card p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 grid place-items-center shrink-0">
-                          <Boxes className="w-4 h-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-semibold truncate">{m.name}</p>
-                          <StockBadge qty={m.quantity} />
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
-                        <button className="p-2 rounded-lg hover:bg-slate-100 text-slate-600" onClick={() => { setEditing(m); setModalOpen(true); }}>
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 rounded-lg hover:bg-red-50 text-red-600" onClick={() => setDeleting(m)}>
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-100 text-xs">
-                      <Cell label="Qty" value={`${m.quantity} ${m.unit}`} />
-                      <Cell label="Total" value={fmtMoney(m.totalCost)} />
-                      <Cell label="Per unit" value={fmtMoney(costPerUnit(m))} />
-                    </div>
-                    <p className="text-xs text-slate-400 mt-2">Updated {fmtDate(m.updatedAt)}</p>
-                  </div>
-                ))}
-              </div>
-            </>
+            </div>
           )}
         </>
       )}

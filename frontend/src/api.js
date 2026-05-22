@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { clearStoredAccess, getStoredAccessPin } from './access.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = 'import.meta.env.VITE_API_URL';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -47,7 +47,18 @@ function normalizeMaterial(material) {
   return {
     ...material,
     id: material._id,
-    totalCost: material.unitCost,
+    // map server fields to friendly frontend fields
+    name: material.itemName,
+    itemName: material.itemName,
+    quantity: material.quantity,
+    unit: material.unit,
+    baseRate: material.baseRate,
+    rateAfterTax: material.rateAfterTax,
+    frate: material.frate,
+    ratePerKg: material.ratePerKg,
+    notes: material.notes,
+    createdAt: material.createdAt,
+    updatedAt: material.updatedAt,
   };
 }
 
@@ -67,10 +78,15 @@ function normalizeProduct(product) {
 }
 
 function toApiMaterial(payload) {
-  const { totalCost, ...rest } = payload;
+  // payload may use `name` or `itemName` on the frontend
+  const { itemName, name, quantity, baseRate, frate, unit, notes } = payload;
   return {
-    ...rest,
-    unitCost: totalCost,
+    itemName: itemName || name,
+    quantity,
+    baseRate,
+    frate,
+    unit,
+    notes,
   };
 }
 
