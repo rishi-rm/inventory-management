@@ -20,21 +20,21 @@ const rawMaterialSchema = new mongoose.Schema(
       min: [0, 'Quantity cannot be negative'],
     },
     baseRate: {
-      // user-entered total base cost WITHOUT GST
+      // user-entered rate PER UNIT (e.g. ₹/kg) WITHOUT GST
       type: Number,
       required: true,
       default: 0,
       min: [0, 'Base rate cannot be negative'],
     },
     rateAfterTax: {
-      // baseRate + GST (18%) - computed
+      // total base plus freight for all units, plus GST (18%) - computed
       type: Number,
       required: true,
       default: 0,
       min: [0, 'Rate after tax cannot be negative'],
     },
     frate: {
-      // freight per kg
+      // freight per unit (e.g. ₹/kg)
       type: Number,
       required: true,
       default: 0,

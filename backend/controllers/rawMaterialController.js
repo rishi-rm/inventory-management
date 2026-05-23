@@ -28,6 +28,7 @@ exports.createRawMaterial = async (req, res, next) => {
       error.statusCode = 400;
       return next(error);
     }
+    // `baseRate` is now the rate per unit (e.g. per kg) without GST or freight
     const br = Number(baseRate || 0);
     if (isNaN(br) || br < 0) {
       const error = new Error('Base rate must be 0 or greater');
@@ -41,9 +42,12 @@ exports.createRawMaterial = async (req, res, next) => {
       return next(error);
     }
 
-    const gst = br * 0.18;
-    const rateAfterTax = br + gst;
-    const ratePerKg = q > 0 ? (br + gst + fr) / q : 0;
+    // compute using per-unit base rate plus freight, then apply GST on the total amount
+    const unitBeforeTax = br + fr;
+    const totalBeforeTax = unitBeforeTax * q;
+    const gst = totalBeforeTax * 0.18;
+    const rateAfterTax = totalBeforeTax + gst; // total amount after tax
+    const ratePerKg = q > 0 ? unitBeforeTax * 1.18 : 0;
 
     const material = await RawMaterial.create({
       itemName: cleanName,
@@ -83,6 +87,7 @@ exports.updateRawMaterial = async (req, res, next) => {
     }
 
     const q = typeof update.quantity !== 'undefined' ? update.quantity : existing.quantity;
+    // baseRate is rate per unit (e.g. per kg)
     const br = typeof update.baseRate !== 'undefined' ? update.baseRate : existing.baseRate;
     const fr = typeof update.frate !== 'undefined' ? update.frate : existing.frate;
 
@@ -102,9 +107,11 @@ exports.updateRawMaterial = async (req, res, next) => {
       return next(error);
     }
 
-    const gst = br * 0.18;
-    update.rateAfterTax = br + gst;
-    update.ratePerKg = q > 0 ? (br + gst + fr) / q : 0;
+    const unitBeforeTax = br + fr;
+    const totalBeforeTax = unitBeforeTax * q;
+    const gst = totalBeforeTax * 0.18;
+    update.rateAfterTax = totalBeforeTax + gst;
+    update.ratePerKg = q > 0 ? unitBeforeTax * 1.18 : 0;
 
     const material = await RawMaterial.findOneAndUpdate(
       { _id: req.params.id },

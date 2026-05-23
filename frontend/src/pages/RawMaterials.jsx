@@ -11,6 +11,13 @@ import Spinner from '../components/Spinner.jsx';
 
 const fmtDate = (d) => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 const fmtMoney = (n) => '₹' + Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+const fmtQuantity = (qty, unit) => {
+  const value = qty ?? 0;
+  const normalizedUnit = String(unit || '').trim();
+  if (!normalizedUnit) return value;
+  const separator = normalizedUnit.length > 2 ? ' ' : '';
+  return `${value}${separator}${normalizedUnit}`;
+};
 
 export default function RawMaterials() {
   const {
@@ -132,10 +139,11 @@ export default function RawMaterials() {
                     <tr className="border-b border-slate-200">
                       <th className="sticky top-0 z-20 text-left font-semibold px-4 py-3">Item</th>
                       <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Quantity</th>
-                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Base Rate</th>
-                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Rate After Tax</th>
-                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Frate</th>
-                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Rate/ kg</th>
+                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Base rate / unit</th>
+                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Base + freight / unit</th>
+                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">GST / unit</th>
+                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Total rate / unit</th>
+                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Total capital invested</th>
                       <th className="sticky top-0 z-20 text-left font-semibold px-4 py-3">Updated</th>
                       <th className="sticky top-0 z-20 px-4 py-3"></th>
                     </tr>
@@ -154,11 +162,12 @@ export default function RawMaterials() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right tabular-nums font-semibold">{m.quantity}</td>
+                        <td className="px-4 py-3 text-right tabular-nums font-semibold">{fmtQuantity(m.quantity, m.unit)}</td>
                         <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(m.baseRate)}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(m.rateAfterTax)}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(m.frate)}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{fmtMoney((m.baseRate || 0) + (m.frate || 0))}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(((m.baseRate || 0) + (m.frate || 0)) * 0.18)}</td>
                         <td className="px-4 py-3 text-right tabular-nums font-semibold">{fmtMoney(m.ratePerKg)}</td>
+                        <td className="px-4 py-3 text-right tabular-nums font-semibold">{fmtMoney((m.ratePerKg || 0) * (m.quantity || 0))}</td>
                         <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{fmtDate(m.updatedAt)}</td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">
                           <button

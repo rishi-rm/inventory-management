@@ -30,14 +30,16 @@ export default function RawMaterialModal({ open, onClose, onSubmit, initial }) {
     }
   }, [open, initial]);
 
+  // baseRate is rate per unit (e.g. per kg); frate is freight per unit
   const calculations = useMemo(() => {
-    const q = parseFloat(form.quantity);
-    const br = parseFloat(form.baseRate);
-    const fr = parseFloat(form.frate);
-    const gst = !isNaN(br) ? br * 0.18 : 0;
-    const rateAfterTax = !isNaN(br) ? br + gst : 0;
-    const ratePerKg = q > 0 && !isNaN(br) && !isNaN(fr) ? (br + gst + fr) / q : 0;
-    return { gst, rateAfterTax, ratePerKg };
+    const q = parseFloat(form.quantity) || 0;
+    const br = parseFloat(form.baseRate) || 0;
+    const fr = parseFloat(form.frate) || 0;
+    const unitBeforeTax = br + fr;
+    const gstPerUnit = unitBeforeTax * 0.18;
+    const totalRatePerUnit = unitBeforeTax + gstPerUnit;
+    const totalCapitalInvested = totalRatePerUnit * q;
+    return { br, fr, unitBeforeTax, gstPerUnit, totalRatePerUnit, totalCapitalInvested };
   }, [form.quantity, form.baseRate, form.frate]);
 
   const handleSubmit = (e) => {
@@ -110,7 +112,7 @@ export default function RawMaterialModal({ open, onClose, onSubmit, initial }) {
         )}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label">Base rate (₹)</label>
+            <label className="label">Base rate (₹/kg)</label>
             <input type="number" min="0" step="any" className="input" placeholder="0.00" value={form.baseRate} onChange={(e) => setForm({ ...form, baseRate: e.target.value })} />
             {errors.baseRate && <p className="text-xs text-red-600 mt-1.5">{errors.baseRate}</p>}
           </div>
@@ -131,28 +133,32 @@ export default function RawMaterialModal({ open, onClose, onSubmit, initial }) {
 
         <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 mt-2">
           <p className="text-xs uppercase tracking-wide font-semibold text-slate-500">Preview</p>
-          <div className="mt-2 grid grid-cols-3 gap-3 text-sm">
+          <div className="mt-2 grid grid-cols-4 gap-3 text-sm">
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">GST (18%)</p>
-              <p className="font-semibold">₹{calculations.gst.toFixed(2)}</p>
+              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Base rate / unit</p>
+              <p className="font-semibold">₹{calculations.br.toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Rate after tax</p>
-              <p className="font-semibold">₹{calculations.rateAfterTax.toFixed(2)}</p>
+              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Base + freight / unit</p>
+              <p className="font-semibold">₹{calculations.unitBeforeTax.toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Rate per kg</p>
-              <p className="font-semibold">₹{calculations.ratePerKg.toFixed(2)}</p>
+              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">GST / unit</p>
+              <p className="font-semibold">₹{calculations.gstPerUnit.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Total rate / unit</p>
+              <p className="font-semibold">₹{calculations.totalRatePerUnit.toFixed(2)}</p>
             </div>
           </div>
         </div>
 
         <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-wide font-semibold text-slate-500">Cost per unit</p>
-            <p className="text-xl font-bold mt-0.5">₹{calculations.ratePerKg.toFixed(2)}</p>
+            <p className="text-xs uppercase tracking-wide font-semibold text-slate-500">Total capital invested</p>
+            <p className="text-xl font-bold mt-0.5">₹{calculations.totalCapitalInvested.toFixed(2)}</p>
           </div>
-          <p className="text-xs text-slate-500 text-right">Auto-calculated<br />total ÷ quantity</p>
+          <p className="text-xs text-slate-500 text-right">Total capital = total rate per unit × quantity</p>
         </div>
       </form>
     </Modal>
