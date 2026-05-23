@@ -112,12 +112,12 @@ export default function RawMaterialModal({ open, onClose, onSubmit, initial }) {
         )}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label">Base rate (₹/kg)</label>
+            <label className="label">Base rate (₹/unit)</label>
             <input type="number" min="0" step="any" className="input" placeholder="0.00" value={form.baseRate} onChange={(e) => setForm({ ...form, baseRate: e.target.value })} />
             {errors.baseRate && <p className="text-xs text-red-600 mt-1.5">{errors.baseRate}</p>}
           </div>
           <div>
-            <label className="label">Freight (₹/kg)</label>
+            <label className="label">Freight (₹/unit)</label>
             <input
               type="number"
               min="0"
