@@ -136,19 +136,19 @@ export default function RawMaterialModal({ open, onClose, onSubmit, initial }) {
           <div className="mt-2 grid grid-cols-4 gap-3 text-sm">
             <div>
               <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Base rate / unit</p>
-              <p className="font-semibold">₹{calculations.br.toFixed(2)}</p>
+              <p className="font-semibold">₹{calculations.br.toFixed(3)}</p>
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Base + freight / unit</p>
-              <p className="font-semibold">₹{calculations.unitBeforeTax.toFixed(2)}</p>
+              <p className="font-semibold">₹{calculations.unitBeforeTax.toFixed(3)}</p>
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">GST / unit</p>
-              <p className="font-semibold">₹{calculations.gstPerUnit.toFixed(2)}</p>
+              <p className="font-semibold">₹{calculations.gstPerUnit.toFixed(3)}</p>
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Total rate / unit</p>
-              <p className="font-semibold">₹{calculations.totalRatePerUnit.toFixed(2)}</p>
+              <p className="font-semibold">₹{calculations.totalRatePerUnit.toFixed(3)}</p>
             </div>
           </div>
         </div>
@@ -156,7 +156,7 @@ export default function RawMaterialModal({ open, onClose, onSubmit, initial }) {
         <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-wide font-semibold text-slate-500">Total capital invested</p>
-            <p className="text-xl font-bold mt-0.5">₹{calculations.totalCapitalInvested.toFixed(2)}</p>
+            <p className="text-xl font-bold mt-0.5">₹{calculations.totalCapitalInvested.toFixed(3)}</p>
           </div>
           <p className="text-xs text-slate-500 text-right">Total capital = total rate per unit × quantity</p>
         </div>

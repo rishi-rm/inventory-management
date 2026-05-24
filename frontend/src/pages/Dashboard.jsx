@@ -4,7 +4,7 @@ import PageHeader from '../components/PageHeader.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { useInventory } from '../context/InventoryContext.jsx';
 
-const fmt = (n) => '₹' + n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+const fmt = (n) => '₹' + n.toLocaleString(undefined, { maximumFractionDigits: 3 });
 
 export default function Dashboard() {
   const { stats } = useInventory();

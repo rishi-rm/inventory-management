@@ -10,7 +10,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import Spinner from '../components/Spinner.jsx';
 
 const fmtDate = (d) => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-const fmt = (n) => '₹' + Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+const fmt = (n) => '₹' + Number(n).toLocaleString(undefined, { maximumFractionDigits: 3 });
 
 export default function Products() {
   const {

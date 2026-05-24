@@ -3,7 +3,7 @@ import { Plus, Trash2, AlertTriangle, Package } from 'lucide-react';
 import Modal from './Modal.jsx';
 import { useInventory } from '../context/InventoryContext.jsx';
 
-const fmt = (n) => '₹' + Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+const fmt = (n) => '₹' + Number(n).toLocaleString(undefined, { maximumFractionDigits: 3 });
 
 export default function ProductModal({ open, onClose, onSubmit, initial }) {
   const { materials, costPerUnit, getMaterial, units } = useInventory();

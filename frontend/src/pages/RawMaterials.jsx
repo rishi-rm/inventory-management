@@ -10,13 +10,14 @@ import { useToast } from '../context/ToastContext.jsx';
 import Spinner from '../components/Spinner.jsx';
 
 const fmtDate = (d) => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-const fmtMoney = (n) => '₹' + Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+const fmtMoney = (n) => '₹' + Number(n).toLocaleString(undefined, { maximumFractionDigits: 3 });
 const fmtQuantity = (qty, unit) => {
-  const value = qty ?? 0;
+  const value = Number(qty ?? 0);
+  const formatted = Number.isInteger(value) ? String(value) : value.toLocaleString(undefined, { maximumFractionDigits: 3 });
   const normalizedUnit = String(unit || '').trim();
-  if (!normalizedUnit) return value;
+  if (!normalizedUnit) return formatted;
   const separator = normalizedUnit.length > 2 ? ' ' : '';
-  return `${value}${separator}${normalizedUnit}`;
+  return `${formatted}${separator}${normalizedUnit}`;
 };
 
 export default function RawMaterials() {
