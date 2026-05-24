@@ -63,9 +63,10 @@ function SidebarContent({ onNavigate, hideLogo }) {
           </NavLink>
         ))}
       </nav>
-      <div className="p-4 m-3 rounded-xl bg-gradient-to-br from-slate-900 to-slate-700 text-white">
-        <p className="text-xs font-semibold uppercase tracking-wider opacity-70">Tip</p>
-        <p className="text-sm mt-1 leading-snug">Track raw material costs to keep your manufacturing margins healthy.</p>
+      <div className="p-4 m-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Support</p>
+        <p className="mt-1 text-sm text-slate-600">+91 78148 37076</p>
+        <p className="mt-1 text-sm text-slate-600">rishabh.rm.2511@gmail.com</p>
       </div>
     </>
   );

@@ -12,6 +12,8 @@ export default function ProductModal({ open, onClose, onSubmit, initial }) {
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('');
   const [rows, setRows] = useState([]); // [{materialId, quantity}]
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [selectedMaterials, setSelectedMaterials] = useState([]);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -21,6 +23,8 @@ export default function ProductModal({ open, onClose, onSubmit, initial }) {
       setUnit(initial?.unit || (units && units[0]) || '');
       setRows(initial ? initial.materials.map((m) => ({ ...m, quantity: String(m.quantity) })) : []);
       setErrors({});
+      setPickerOpen(false);
+      setSelectedMaterials([]);
     }
   }, [open, initial]);
 
@@ -32,6 +36,20 @@ export default function ProductModal({ open, onClose, onSubmit, initial }) {
 
   const updateRow = (idx, patch) => setRows((r) => r.map((row, i) => (i === idx ? { ...row, ...patch } : row)));
   const removeRow = (idx) => setRows((r) => r.filter((_, i) => i !== idx));
+
+  const availableMaterials = materials.filter((m) => !rows.some((r) => r.materialId === m.id));
+  const toggleSelection = (id) => setSelectedMaterials((prev) =>
+    prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+  );
+  const addSelectedMaterials = () => {
+    if (selectedMaterials.length === 0) return;
+    setRows((prev) => [
+      ...prev,
+      ...selectedMaterials.map((materialId) => ({ materialId, quantity: '' })),
+    ]);
+    setSelectedMaterials([]);
+    setPickerOpen(false);
+  };
 
   const breakdown = useMemo(() => {
     return rows.map((r) => {
@@ -125,7 +143,7 @@ export default function ProductModal({ open, onClose, onSubmit, initial }) {
               <label className="label !mb-0">Raw materials used</label>
               <button
                 type="button"
-                onClick={addRow}
+                onClick={() => setPickerOpen((prev) => !prev)}
                 disabled={rows.length >= materials.length}
                 className="btn-ghost !py-1.5 !px-2.5 text-xs"
               >
@@ -133,6 +151,62 @@ export default function ProductModal({ open, onClose, onSubmit, initial }) {
               </button>
             </div>
             {errors.rows && <p className="text-xs text-red-600 mb-2">{errors.rows}</p>}
+
+            {pickerOpen && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
+                  <div>
+                    <p className="font-semibold text-slate-900">Select raw materials</p>
+                    <p className="text-sm text-slate-500 mt-1">Choose one or more materials to add, then click Add selected materials.</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-secondary !py-1 !px-2 text-xs"
+                    onClick={() => {
+                      setPickerOpen(false);
+                      setSelectedMaterials([]);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {availableMaterials.length === 0 ? (
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+                    All materials are already added.
+                  </div>
+                ) : (
+                  <div className="grid gap-2">
+                    {availableMaterials.map((material) => (
+                      <label
+                        key={material.id}
+                        className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-slate-300 text-slate-700"
+                          checked={selectedMaterials.includes(material.id)}
+                          onChange={() => toggleSelection(material.id)}
+                        />
+                        <div className="min-w-0">
+                          <p className="font-medium text-slate-900">{material.name}</p>
+                          <p className="text-xs text-slate-500">{material.quantity} {material.unit} in stock</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={addSelectedMaterials}
+                    disabled={selectedMaterials.length === 0}
+                  >
+                    Add selected materials
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               {breakdown.map((b, i) => {
