@@ -19,6 +19,12 @@ const rawMaterialSchema = new mongoose.Schema(
       default: 0,
       min: [0, 'Quantity cannot be negative'],
     },
+    quantityPurchased: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: [0, 'Purchased quantity cannot be negative'],
+    },
     baseRate: {
       // user-entered rate PER UNIT (e.g. ₹/kg) WITHOUT GST
       type: Number,

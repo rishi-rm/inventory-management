@@ -3,7 +3,14 @@ const RawMaterial = require('../models/RawMaterial');
 exports.getAllRawMaterials = async (req, res, next) => {
   try {
     const materials = await RawMaterial.find({});
-    res.json({ success: true, data: materials });
+    const normalizedMaterials = materials.map((m) => {
+      const raw = m.toObject();
+      if (typeof raw.quantityPurchased === 'undefined') {
+        raw.quantityPurchased = raw.quantity;
+      }
+      return raw;
+    });
+    res.json({ success: true, data: normalizedMaterials });
   } catch (err) {
     next(err);
   }
@@ -53,6 +60,7 @@ exports.createRawMaterial = async (req, res, next) => {
       itemName: cleanName,
       unit,
       quantity: q,
+      quantityPurchased: q,
       baseRate: br,
       rateAfterTax,
       frate: fr,
@@ -70,21 +78,32 @@ exports.updateRawMaterial = async (req, res, next) => {
   try {
     const { itemName, name, unit, quantity, baseRate, frate, notes } = req.body;
 
-    const update = {};
-    if (itemName || name) update.itemName = (itemName || name).trim();
-    if (unit) update.unit = unit;
-    if (typeof quantity !== 'undefined') update.quantity = Number(quantity);
-    if (typeof baseRate !== 'undefined') update.baseRate = Number(baseRate);
-    if (typeof frate !== 'undefined') update.frate = Number(frate);
-    if (notes) update.notes = notes;
-
-    // fetch existing to compute derived fields
     const existing = await RawMaterial.findById(req.params.id);
     if (!existing) {
       const error = new Error('Raw material not found');
       error.statusCode = 404;
       return next(error);
     }
+
+    const update = {};
+    if (itemName || name) update.itemName = (itemName || name).trim();
+    if (unit) update.unit = unit;
+    if (typeof quantity !== 'undefined') {
+      const requested = Number(quantity);
+      const existingPurchased = existing.quantityPurchased != null ? existing.quantityPurchased : existing.quantity;
+      const currentLeft = existing.quantity;
+      const used = existingPurchased - currentLeft;
+      if (requested < used) {
+        const error = new Error(`Cannot set purchased quantity to ${requested}; ${used} ${existing.unit} have already been used.`);
+        error.statusCode = 400;
+        return next(error);
+      }
+      update.quantityPurchased = requested;
+      update.quantity = requested - used;
+    }
+    if (typeof baseRate !== 'undefined') update.baseRate = Number(baseRate);
+    if (typeof frate !== 'undefined') update.frate = Number(frate);
+    if (notes) update.notes = notes;
 
     const q = typeof update.quantity !== 'undefined' ? update.quantity : existing.quantity;
     // baseRate is rate per unit (e.g. per kg)

@@ -13,7 +13,7 @@ exports.getAllProducts = async (req, res, next) => {
 
 exports.createProduct = async (req, res, next) => {
   try {
-    const { name, quantity, materials, sellingPrice, notes } = req.body;
+    const { name, quantity, unit, materials, sellingPrice, notes } = req.body;
 
     const materialIds = materials.map((item) => item.material);
     const rawMaterials = await RawMaterial.find({ _id: { $in: materialIds } });
@@ -36,6 +36,7 @@ exports.createProduct = async (req, res, next) => {
     const product = await Product.create({
       name,
       quantity,
+      unit,
       materials,
       sellingPrice,
       notes,
@@ -60,19 +61,81 @@ exports.createProduct = async (req, res, next) => {
 
 exports.updateProduct = async (req, res, next) => {
   try {
-    const product = await Product.findOneAndUpdate(
-      { _id: req.params.id },
-      req.body,
-      { new: true, runValidators: true }
-    );
-
-    if (!product) {
+    // Fetch existing product to compute material quantity diffs
+    const existing = await Product.findById(req.params.id);
+    if (!existing) {
       const error = new Error('Product not found');
       error.statusCode = 404;
       return next(error);
     }
 
-    res.json({ success: true, data: product });
+    const { name, quantity, materials, sellingPrice, notes, unit } = req.body;
+
+    // Build map of existing material quantities by id
+    const existingMap = new Map();
+    for (const m of existing.materials) {
+      const id = (m.material && m.material.toString()) || m.materialId || m.material;
+      existingMap.set(id, (existingMap.get(id) || 0) + Number(m.quantity || 0));
+    }
+
+    // Build map of new material quantities by id
+    const newMap = new Map();
+    for (const m of materials || []) {
+      const id = (m.material && m.material.toString()) || m.materialId || m.material;
+      newMap.set(id, (newMap.get(id) || 0) + Number(m.quantity || 0));
+    }
+
+    // Collect all material ids involved
+    const allIds = Array.from(new Set([...existingMap.keys(), ...newMap.keys()]));
+
+    // Load raw materials to validate stock
+    const rawMaterials = await RawMaterial.find({ _id: { $in: allIds } });
+    const rawMap = new Map(rawMaterials.map((r) => [r._id.toString(), r]));
+
+    // Compute diffs and check availability for increases
+    const bulk = [];
+    for (const id of allIds) {
+      const oldQty = existingMap.get(id) || 0;
+      const newQty = newMap.get(id) || 0;
+      const delta = newQty - oldQty; // positive -> more used, negative -> less used (return to stock)
+      const mat = rawMap.get(id);
+      if (!mat) {
+        const error = new Error('Raw material not found');
+        error.statusCode = 404;
+        return next(error);
+      }
+      if (delta > 0 && delta > mat.quantity) {
+        const required = Number(delta.toFixed(6));
+        const available = Number(mat.quantity || 0);
+        const unit = mat.unit || '';
+        const error = new Error(`${mat.itemName || mat.name} has only ${available} ${unit} left and requires ${required} ${unit}`);
+        error.statusCode = 400;
+        return next(error);
+      }
+      if (delta !== 0) {
+        // decrease raw material by delta (if delta positive) or increase if delta negative
+        bulk.push({
+          updateOne: {
+            filter: { _id: id },
+            update: { $inc: { quantity: -delta } },
+          },
+        });
+      }
+    }
+
+    // Apply raw material updates
+    if (bulk.length) {
+      await RawMaterial.bulkWrite(bulk);
+    }
+
+    // Prepare updated product payload
+    const updated = await Product.findOneAndUpdate(
+      { _id: req.params.id },
+      { name, quantity, materials, sellingPrice, notes, unit },
+      { new: true, runValidators: true }
+    ).populate('materials.material', 'itemName unit ratePerKg');
+
+    res.json({ success: true, data: updated });
   } catch (err) {
     next(err);
   }

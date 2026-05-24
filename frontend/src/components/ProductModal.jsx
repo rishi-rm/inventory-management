@@ -6,10 +6,11 @@ import { useInventory } from '../context/InventoryContext.jsx';
 const fmt = (n) => '₹' + Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 export default function ProductModal({ open, onClose, onSubmit, initial }) {
-  const { materials, costPerUnit, getMaterial } = useInventory();
+  const { materials, costPerUnit, getMaterial, units } = useInventory();
 
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [unit, setUnit] = useState('');
   const [rows, setRows] = useState([]); // [{materialId, quantity}]
   const [errors, setErrors] = useState({});
 
@@ -17,6 +18,7 @@ export default function ProductModal({ open, onClose, onSubmit, initial }) {
     if (open) {
       setName(initial?.name || '');
       setQuantity(initial ? String(initial.quantity) : '');
+      setUnit(initial?.unit || (units && units[0]) || '');
       setRows(initial ? initial.materials.map((m) => ({ ...m, quantity: String(m.quantity) })) : []);
       setErrors({});
     }
@@ -51,6 +53,7 @@ export default function ProductModal({ open, onClose, onSubmit, initial }) {
     if (!name.trim()) eobj.name = 'Name is required';
     const q = parseFloat(quantity);
     if (isNaN(q) || q <= 0) eobj.quantity = 'Quantity must be greater than 0';
+    if (!unit) eobj.unit = 'Select a unit';
     if (rows.length === 0) eobj.rows = 'Add at least one raw material';
     breakdown.forEach((b, i) => {
       const qty = parseFloat(b.row.quantity);
@@ -61,6 +64,7 @@ export default function ProductModal({ open, onClose, onSubmit, initial }) {
     onSubmit({
       name: name.trim(),
       quantity: q,
+      unit,
       materials: rows.map((r) => ({ materialId: r.materialId, quantity: parseFloat(r.quantity) })),
     });
     onClose();
@@ -103,8 +107,16 @@ export default function ProductModal({ open, onClose, onSubmit, initial }) {
             </div>
             <div>
               <label className="label">Quantity produced</label>
-              <input type="number" min="0" step="any" className="input" placeholder="0" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+              <div className="flex gap-2">
+                <input type="number" min="0" step="any" className="input" placeholder="0" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+                <select className="input w-36" value={unit} onChange={(e) => setUnit(e.target.value)}>
+                  {units.map((u) => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                </select>
+              </div>
               {errors.quantity && <p className="text-xs text-red-600 mt-1.5">{errors.quantity}</p>}
+              {errors.unit && <p className="text-xs text-red-600 mt-1.5">{errors.unit}</p>}
             </div>
           </div>
 
@@ -201,7 +213,7 @@ export default function ProductModal({ open, onClose, onSubmit, initial }) {
               </div>
               <div className="text-right">
                 <p className="text-xs opacity-70">Per unit produced</p>
-                <p className="text-lg font-semibold">{quantity ? fmt(total / parseFloat(quantity || 1)) : '—'}</p>
+                <p className="text-lg font-semibold">{quantity ? `${fmt(total / parseFloat(quantity || 1))} / ${unit}` : '—'}</p>
               </div>
             </div>
           </div>

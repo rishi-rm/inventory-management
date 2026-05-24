@@ -18,7 +18,7 @@ export default function RawMaterialModal({ open, onClose, onSubmit, initial }) {
         initial
           ? {
               itemName: initial.itemName || initial.name,
-              quantity: String(initial.quantity),
+              quantity: String(initial.quantityPurchased ?? initial.quantity),
               unit: initial.unit || 'kg',
               baseRate: String(initial.baseRate || ''),
               frate: initial.frate || 10,
@@ -86,7 +86,7 @@ export default function RawMaterialModal({ open, onClose, onSubmit, initial }) {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label">Quantity</label>
+            <label className="label">Quantity purchased</label>
             <input type="number" min="0" step="any" className="input" placeholder="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
             {errors.quantity && <p className="text-xs text-red-600 mt-1.5">{errors.quantity}</p>}
           </div>

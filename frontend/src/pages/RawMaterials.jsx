@@ -45,6 +45,15 @@ export default function RawMaterials() {
     });
   }, [materials, q]);
 
+  const sorted = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      const aOut = (a.quantity || 0) <= 0;
+      const bOut = (b.quantity || 0) <= 0;
+      if (aOut !== bOut) return aOut ? 1 : -1;
+      return (b.updatedAt || '').localeCompare(a.updatedAt || '');
+    });
+  }, [filtered]);
+
   const onSubmit = async (data) => {
     try {
       if (editing) {
@@ -138,7 +147,8 @@ export default function RawMaterials() {
                   <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-[0.18em]">
                     <tr className="border-b border-slate-200">
                       <th className="sticky top-0 z-20 text-left font-semibold px-4 py-3">Item</th>
-                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Quantity</th>
+                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Quantity bought</th>
+                      <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Quantity left</th>
                       <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Base rate / unit</th>
                       <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">Base + freight / unit</th>
                       <th className="sticky top-0 z-20 text-right font-semibold px-4 py-3">GST / unit</th>
@@ -149,8 +159,11 @@ export default function RawMaterials() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((m, idx) => (
-                      <tr key={m.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-slate-100 transition-colors`}> 
+                    {sorted.map((m, idx) => (
+                      <tr
+                        key={m.id}
+                        className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-slate-100 transition-colors ${m.quantity <= 0 ? 'bg-slate-100 text-slate-400' : ''}`}
+                      >
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 grid place-items-center">
@@ -162,7 +175,8 @@ export default function RawMaterials() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right tabular-nums font-semibold">{fmtQuantity(m.quantity, m.unit)}</td>
+                        <td className="px-4 py-3 text-right tabular-nums font-semibold">{fmtQuantity(m.quantityPurchased ?? m.quantity, m.unit)}</td>
+                        <td className={`px-4 py-3 text-right tabular-nums font-semibold ${m.quantity <= 0 ? 'text-slate-400' : ''}`}>{fmtQuantity(m.quantity, m.unit)}</td>
                         <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(m.baseRate)}</td>
                         <td className="px-4 py-3 text-right tabular-nums">{fmtMoney((m.baseRate || 0) + (m.frate || 0))}</td>
                         <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(((m.baseRate || 0) + (m.frate || 0)) * 0.18)}</td>

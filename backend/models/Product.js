@@ -12,6 +12,12 @@ const productSchema = new mongoose.Schema(
       required: true,
       default: 0,
     },
+    unit: {
+      type: String,
+      required: false,
+      trim: true,
+      default: '',
+    },
     materials: [
       {
         material: {

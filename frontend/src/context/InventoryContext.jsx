@@ -87,6 +87,8 @@ export function InventoryProvider({ children }) {
   const updateProduct = async (id, data) => {
     const product = await apiUpdateProduct(id, data);
     setProducts((arr) => arr.map((item) => (item.id === id ? product : item)));
+    // refresh raw materials to reflect any stock changes caused by product update
+    await fetchMaterials();
     return product;
   };
 

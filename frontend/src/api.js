@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { clearStoredAccess, getStoredAccessPin } from './access.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL;
-// const API_BASE_URL = 'http://localhost:5000/api';
+// const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -52,6 +52,7 @@ function normalizeMaterial(material) {
     name: material.itemName,
     itemName: material.itemName,
     quantity: material.quantity,
+    quantityPurchased: material.quantityPurchased || material.quantity,
     unit: material.unit,
     baseRate: material.baseRate,
     rateAfterTax: material.rateAfterTax,
@@ -73,6 +74,7 @@ function normalizeProduct(product) {
       return {
         materialId,
         quantity: item.quantity,
+        unit: item.unit || (material?.unit || ''),
       };
     }),
   };
@@ -97,6 +99,7 @@ function toApiProduct(payload) {
     materials: payload.materials.map((item) => ({
       material: item.materialId,
       quantity: item.quantity,
+      unit: item.unit,
     })),
   };
 }

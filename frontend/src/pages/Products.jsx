@@ -32,12 +32,43 @@ export default function Products() {
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [expanded, setExpanded] = useState(null);
+  const [quantityEdit, setQuantityEdit] = useState('');
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return products;
     return products.filter((p) => p.name.toLowerCase().includes(s));
   }, [products, q]);
+
+  const validateQuantityUpdate = (product, newQuantity) => {
+    if (!product.quantity || product.quantity <= 0) return null;
+    const factor = newQuantity / product.quantity;
+    if (factor <= 1) return null;
+
+    const problems = product.materials.reduce((acc, u) => {
+      const m = getMaterial(u.materialId);
+      const currentUse = Number(u.quantity || 0);
+      const nextUse = Number((currentUse * factor).toFixed(6));
+      const requiredExtra = nextUse - currentUse;
+      const available = m ? Number(m.quantity || 0) : 0;
+
+      if (requiredExtra > available + 1e-9) {
+        acc.push({
+          name: m?.itemName || m?.name || 'Material',
+          available,
+          required: requiredExtra,
+          unit: m?.unit || '',
+        });
+      }
+      return acc;
+    }, []);
+
+    if (problems.length === 0) return null;
+
+    return problems
+      .map((p) => `${p.name} has only ${p.available} ${p.unit} left and requires ${p.required} ${p.unit}`)
+      .join('. ');
+  };
 
   const onSubmit = async (data) => {
     try {
@@ -154,6 +185,13 @@ export default function Products() {
                     {filtered.map((p, idx) => {
                       const total = productCost(p);
                       const isOpen = expanded === p.id;
+                      const formula = p.materials
+                        .map((u) => {
+                          const m = getMaterial(u.materialId);
+                          return `${u.quantity} ${m?.unit || ''} ${m?.itemName || m?.name || 'material'}`.trim();
+                        })
+                        .join(' + ');
+                      const perUnitCost = p.quantity ? total / p.quantity : 0;
                       return (
                         <Fragment key={p.id}>
                           <tr className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-slate-100 transition-colors`}>
@@ -164,18 +202,22 @@ export default function Products() {
                                 </div>
                                 <div className="min-w-0">
                                   <p className="font-semibold truncate">{p.name}</p>
-                                  <p className="text-xs text-slate-500">{p.quantity} units</p>
+                                  <p className="text-xs text-slate-500">{p.quantity} {p.unit || ''}</p>
                                 </div>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-right tabular-nums font-semibold">{p.quantity}</td>
+                            <td className="px-4 py-3 text-right tabular-nums font-semibold">{p.quantity} {p.unit || ''}</td>
                             <td className="px-4 py-3 text-right tabular-nums">{p.materials.length}</td>
                             <td className="px-4 py-3 text-right tabular-nums font-semibold">{fmt(total)}</td>
                             <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{fmtDate(p.createdAt)}</td>
                             <td className="px-4 py-3 text-right whitespace-nowrap">
                               <button
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
-                                onClick={() => setExpanded(isOpen ? null : p.id)}
+                                onClick={() => {
+                                  const nextOpen = isOpen ? null : p.id;
+                                  setExpanded(nextOpen);
+                                  setQuantityEdit(nextOpen ? String(p.quantity) : '');
+                                }}
                                 title="Toggle materials"
                               >
                                 {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -199,8 +241,71 @@ export default function Products() {
                           {isOpen && (
                             <tr>
                               <td colSpan="6" className="bg-slate-50 px-4 py-3 border-b border-slate-200">
-                                <div className="rounded-2xl bg-white border border-slate-200 p-4">
-                                  <div className="mb-3 text-xs uppercase tracking-[0.18em] text-slate-500 font-semibold">Materials breakdown</div>
+                                <div className="rounded-2xl bg-white border border-slate-200 p-4 space-y-4">
+                                  <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                                    <div>
+                                      <div className="text-xs uppercase tracking-[0.18em] text-slate-500 font-semibold mb-2">Materials breakdown</div>
+                                      <div className="text-sm text-slate-600">{formula} = {p.quantity} {p.unit || ''}</div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step="any"
+                                        className="input w-32"
+                                        value={quantityEdit}
+                                        onChange={(e) => setQuantityEdit(e.target.value)}
+                                        aria-label="New product quantity"
+                                      />
+                                      <div className="text-sm text-slate-500">{p.unit || ''}</div>
+                                      <button
+                                        type="button"
+                                        className="btn-secondary whitespace-nowrap"
+                                        onClick={async () => {
+                                          const newQty = parseFloat(quantityEdit);
+                                          if (isNaN(newQty) || newQty <= 0) {
+                                            return toast.error('Enter a valid total quantity');
+                                          }
+                                          if (!p.quantity || p.quantity <= 0) {
+                                            return toast.error('Cannot scale a product with zero quantity');
+                                          }
+
+                                          const validation = validateQuantityUpdate(p, newQty);
+                                          if (validation) {
+                                            setQuantityEdit(String(p.quantity));
+                                            return toast.error(validation);
+                                          }
+
+                                          try {
+                                            const factor = newQty / p.quantity;
+                                            const newMaterials = p.materials.map((u) => ({
+                                              materialId: u.materialId,
+                                              quantity: Number((u.quantity * factor).toFixed(6)),
+                                            }));
+                                            await updateProduct(p.id, {
+                                              name: p.name,
+                                              quantity: newQty,
+                                              unit: p.unit,
+                                              materials: newMaterials,
+                                              sellingPrice: p.sellingPrice || 0,
+                                              notes: p.notes || '',
+                                            });
+                                            toast.success('Product quantity updated');
+                                            setQuantityEdit(String(newQty));
+                                          } catch (err) {
+                                            const message = err?.message || 'Could not update quantity';
+                                            if (message.includes('has only') || message.includes('Insufficient stock')) {
+                                              setQuantityEdit(String(p.quantity));
+                                            }
+                                            toast.error(message);
+                                          }
+                                        }}
+                                      >
+                                        Update quantity
+                                      </button>
+                                    </div>
+                                  </div>
+
                                   <div className="grid gap-3">
                                     {p.materials.map((u, i) => {
                                       const m = getMaterial(u.materialId);
@@ -216,9 +321,16 @@ export default function Products() {
                                       );
                                     })}
                                   </div>
-                                  <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-3 text-sm font-semibold">
-                                    <span>Total cost</span>
-                                    <span>{fmt(total)}</span>
+
+                                  <div className="grid gap-3 sm:grid-cols-2 items-center border-t border-slate-200 pt-3 text-sm font-semibold">
+                                    <div>
+                                      <div className="text-slate-500">Cost per {p.unit || 'unit'}</div>
+                                      <div>{fmt(perUnitCost)}</div>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span>Total cost</span>
+                                      <span>{fmt(total)}</span>
+                                    </div>
                                   </div>
                                 </div>
                               </td>
