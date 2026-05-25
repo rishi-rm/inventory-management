@@ -51,7 +51,7 @@ export default function RawMaterialModal({ open, onClose, onSubmit, initial }) {
     const br = parseFloat(form.baseRate);
     if (isNaN(br) || br < 0) eobj.baseRate = 'Base rate must be 0 or greater';
     const fr = parseFloat(form.frate);
-    if (isNaN(fr) || fr < 10 || fr > 120) eobj.frate = 'Freight must be between 10 and 120';
+    if (isNaN(fr)) eobj.frate = 'Freight must be a valid number';
     let unit = form.unit;
     if (unit === CUSTOM_VALUE) {
       const u = customUnit.trim().toLowerCase();

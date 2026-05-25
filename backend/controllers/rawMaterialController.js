@@ -43,8 +43,8 @@ exports.createRawMaterial = async (req, res, next) => {
       return next(error);
     }
     const fr = Number(frate || 0);
-    if (isNaN(fr) || fr < 0) {
-      const error = new Error('Freight rate must be 0 or greater');
+    if (isNaN(fr)) {
+      const error = new Error('Freight must be a valid number');
       error.statusCode = 400;
       return next(error);
     }
@@ -120,8 +120,8 @@ exports.updateRawMaterial = async (req, res, next) => {
       error.statusCode = 400;
       return next(error);
     }
-    if (isNaN(fr) || fr < 0) {
-      const error = new Error('Freight rate must be 0 or greater');
+    if (isNaN(fr)) {
+      const error = new Error('Freight must be a valid number');
       error.statusCode = 400;
       return next(error);
     }
